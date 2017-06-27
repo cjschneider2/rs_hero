@@ -1,9 +1,11 @@
 extern crate sdl2;
 
+mod fps;
+
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 
-use std::time;
+use fps::FpsTimer;
 
 fn main() {
 
@@ -16,27 +18,21 @@ fn main() {
                                .build()
                                .unwrap();
 
-   let mut canvas = window.into_canvas().present_vsync().build().unwrap();
+   let mut _canvas = window.into_canvas().present_vsync().build().unwrap();
    let mut event_pump = sdl_context.event_pump().unwrap();
 
    // inital loop state
-   let time_epoch = time::Instant::now();
-   let fps = 60.0f64;
+   let mut fps_timer = FpsTimer::new(60.0);
    let mut last_sec = 0;
    let mut last_event = None;
-   let mut frames = 0;
-   let mut fps_as_ns = (1.0 / fps) * 1_000_000_000f64;
 
    'main: loop {
       // loop start time
-      let time_start = time::Instant::now();
-      let time_sec = time_epoch.elapsed().as_secs();
-      if  time_sec > last_sec {
-         println!("fps: {:?}", frames);
-         frames = 0; 
-         last_sec = time_sec;
-      } else {
-         frames += 1;
+      fps_timer.tick();
+      let tick = fps_timer.get_epoch().elapsed().as_secs();
+      if tick > last_sec {
+         println!("fps: {:?}", fps_timer.get_last_fps());
+         last_sec = tick;
       }
 
       // start event handler
@@ -45,7 +41,8 @@ fn main() {
          if let Some(ref event) = new_event {
             match event {
                  &Event::Quit { .. }
-               | &Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
+               | &Event::KeyDown { keycode: Some(Keycode::Escape), .. }
+               => {
                   break 'main;
                },
                _ => {
@@ -61,14 +58,7 @@ fn main() {
       // end of event handler
 
       // start frame timing calculations
-      {
-         let t = time_start.elapsed();
-         let frame_time = t.as_secs() * 1_000_000_000 + t.subsec_nanos() as u64;
-         let diff = fps_as_ns - frame_time as f64;
-         if diff > 0.0 {
-            std::thread::sleep(time::Duration::new(0, diff as u32));
-         }
-      }
+      fps_timer.sleep_til_next_tick();
 
    }
 }

@@ -1,0 +1,18 @@
+
+pub struct FpsTimer {
+   epoch =
+}
+
+impl FpsTimer {
+   pub fn new () -> FpsTimer {
+      FpsTimer {
+   epoch: time::Instant::now();
+   let fps = 60.0f64;
+   let mut last_sec = 0;
+   let mut last_event = None;
+   let mut frames = 0;
+   let mut fps_as_ns = (1.0 / fps) * 1_000_000_000f64;
+
+      }
+   }
+}
