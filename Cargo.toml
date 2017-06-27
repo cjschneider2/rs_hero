@@ -1,0 +1,6 @@
+[package]
+name = "rs_hero"
+version = "0.1.0"
+authors = ["C. Jeremiah Schneider <schneider@br-tech.de>"]
+
+[dependencies]
