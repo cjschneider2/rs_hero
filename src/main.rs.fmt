@@ -1,0 +1,34 @@
+extern crate sdl2;
+
+use sdl2::event::Event;
+
+fn main() {
+
+   let sdl_context = sdl2::init().unwrap();
+   let video_subsystem = sdl_context.video().unwrap();
+
+   let window = video_subsystem.window("rs_hero", 400, 400, )
+                               .position_centered()
+                               .opengl()
+                               .build()
+                               .unwrap();
+
+   let mut canvas = window.into_canvas().present_vsync().build().unwrap();
+   let mut event_pump = sdl_context.event_pump().unwrap();
+
+   let mut last_event = None;
+
+   'main: loop {
+      let new_event = event_pump .poll_event();
+      if new_event != last_event {
+         if let Some(event) = new_event {
+            Event::Quit{timestamp: ts} => {
+               break 'main;
+            }
+            _ => {
+               println!("{recieved: :?}", event);
+            }
+         }
+      }
+   }
+}
