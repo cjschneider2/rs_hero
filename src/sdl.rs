@@ -2,24 +2,26 @@ use sdl2;
 use sdl2::event::Event;
 use sdl2::event::WindowEvent;
 use sdl2::keyboard::Keycode;
+use sdl2::pixels::Color;
 
 use error::Error;
 
 pub struct Sdl {
-    context: sdl2::Sdl,
-    video: sdl2::VideoSubsystem,
-    controller: sdl2::GameControllerSubsystem,
-    canvas: sdl2::render::Canvas<sdl2::video::Window>,
-    event_pump: sdl2::EventPump,
-    audio: sdl2::AudioSubsystem,
-    last_event: Option<sdl2::event::Event>,
+    pub context: sdl2::Sdl,
+    pub video: sdl2::VideoSubsystem,
+    pub controller: sdl2::GameControllerSubsystem,
+    pub canvas: sdl2::render::Canvas<sdl2::video::Window>,
+    pub event_pump: sdl2::EventPump,
+    pub audio: sdl2::AudioSubsystem,
+    pub texture_creator: sdl2::render::TextureCreator<sdl2::video::WindowContext>,
+    pub last_event: Option<sdl2::event::Event>,
 }
 
 impl Sdl {
-    pub fn new() -> Result<Sdl, Error> {
+    pub fn new(width: u32, height: u32) -> Result<Sdl, Error> {
         let context = sdl2::init()?;
         let video = context.video()?;
-        let window = video.window("rs_hero", 400, 400)
+        let window = video.window("rs_hero", width, height)
                           .position_centered()
                           .opengl()
                           .build()?;
@@ -27,16 +29,37 @@ impl Sdl {
         let controller = context.game_controller()?;
         let event_pump = context.event_pump()?;
         let audio = context.audio()?;
-        let sdl = Sdl {
+        let texture_creator = canvas.texture_creator();
+        let mut sdl = Sdl {
             context: context,
             video: video,
             controller: controller,
             canvas: canvas,
             event_pump: event_pump,
             audio: audio,
+            texture_creator: texture_creator,
             last_event: None,
         };
         Ok(sdl)
+    }
+
+    pub fn draw_buffer <'a> (
+        &mut self,
+        buffer: &[u8],
+        // texture: &mut sdl2::render::Texture<'a>,
+        width: u32,
+        height: u32,
+        pitch: usize
+    ) -> Result<(), Error> {
+        self.canvas.clear();
+        // TODO(CJS): maybe not create this texture every time?
+        let mut texture = self.texture_creator.create_texture_target(
+            self.texture_creator.default_pixel_format(),
+            width, height)?;
+        texture.update(None, buffer, pitch)?;
+        self.canvas.copy(&texture, None, None)?;
+        self.canvas.present();
+        Ok(())
     }
 
     pub fn open_game_controllers(&mut self) {
@@ -44,10 +67,10 @@ impl Sdl {
 
     pub fn audio_init(
         &mut self,
-        samples_per_second: usize,
-        buffer_size: usize
+        _samples_per_second: usize,
+        _buffer_size: usize
     ) {
-        let mut audio_spec = sdl2::audio::AudioSpecDesired {
+        let _audio_spec = sdl2::audio::AudioSpecDesired {
             freq: Some(44100),
             channels: Some(2),
             samples: None
@@ -93,7 +116,7 @@ impl Sdl {
                         }
                     },
                     _ => {
-                        println!("recieved: {:?}", event);
+                        // println!("recieved: {:?}", event);
                     }
                 }
 
@@ -110,21 +133,13 @@ impl Sdl {
 
 //  EXTRA STRUCTS -------------------------------------------------------------
 
-pub struct OffscreenBuffer<'a> {
-    texture: sdl2::render::Texture<'a>,
-    memory: (), // NOTE(CJS): in the SDL c program it's a void *.... 
-    width: usize,
-    height: usize,
-    pitch: usize,
-}
-
 pub struct AudioRingBuffer {
     pub data: Box<[u8]>,
     pub write_cursor: usize,
     pub play_cursor: usize,
 }
 
-pub struct SoundOutpu {
+pub struct SoundOutput {
     pub samples_per_second: usize,
     pub running_sample_index: usize,
     pub bytes_per_sample: usize,
