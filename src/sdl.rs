@@ -113,10 +113,9 @@ impl Sdl {
                         match w_event {
                             WindowEvent::Enter => (),
                             WindowEvent::Leave => (),
-                            WindowEvent::SizeChanged(new_x, new_y) => {
-                                game.resize_buffer(new_x as u32, new_y as u32);
-                                println!("Window size changed to: ({},{})",
-                                         new_x, new_y);
+                            WindowEvent::SizeChanged(x, y) => {
+                                game.resize_buffer(x as u32, y as u32);
+                                println!("Window size change: ({},{})", x, y);
                             },
                             _ => (),
                         }

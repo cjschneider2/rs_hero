@@ -161,8 +161,8 @@ fn render_weird_gradient(
 fn render_player(
     buffer: &mut ImageBuffer,
     player_x: u32,
-    player_y: u32 )
-{
+    player_y: u32
+) -> Result<(), Error> {
     let top = player_y;
     let bottom = player_y + 10;
     // TODO(CJS): We could probably assert! and use get_unchecked eventaully...
@@ -176,11 +176,12 @@ fn render_player(
             // HACK(CJS): until I get byteorder to write here efficently i'll
             // just hack in the for bytes manually in LE order...
             // let color = 0xFFFFFFFF; // white
-            buffer.memory[pixel + 0] = 0xFF;
-            buffer.memory[pixel + 1] = 0xFF;
-            buffer.memory[pixel + 2] = 0xFF;
-            buffer.memory[pixel + 3] = 0xFF;
+            if let Some(p) = buffer.memory.get_mut(pixel + 0) { *p = 0xFF; }
+            if let Some(p) = buffer.memory.get_mut(pixel + 1) { *p = 0xFF; }
+            if let Some(p) = buffer.memory.get_mut(pixel + 2) { *p = 0xFF; }
+            if let Some(p) = buffer.memory.get_mut(pixel + 3) { *p = 0xFF; }
             y_offset += buffer.pitch;
         }
     }
+    Ok(())
 }
