@@ -36,7 +36,7 @@ fn main() {
         // }
 
         // handle events
-        if sdl.handle_events() {
+        if sdl.handle_events(&mut game) {
             break 'main;
         }
 

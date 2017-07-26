@@ -71,8 +71,8 @@ pub struct Game {
 
 impl Game {
     pub fn new(width: u32, height: u32) -> Game {
-        let bbp = 4; // 4 bytes per pixel
-        let size = width * height * bbp;
+        let bpp = 4; // 4 bytes per pixel
+        let size = width * height * bpp;
         let mut memory = Vec::with_capacity(size as usize);
         // TODO(CJS): This is just to set the size of the vec because it starts
         //            out with a size of 0... maybe find a better way?
@@ -91,10 +91,20 @@ impl Game {
                 memory: memory,
                 width: width,
                 height: height,
-                pitch: width * bbp,
-                bytes_per_pixel: bbp,
+                pitch: width * bpp,
+                bytes_per_pixel: bpp,
             },
         }
+    }
+
+    pub fn resize_buffer(&mut self, width: u32, height: u32) {
+        let bpp = self.render_buffer.bytes_per_pixel;
+        let size = width * height * bpp;
+        self.render_buffer.pitch = width * bpp;
+        self.render_buffer.width = width;
+        self.render_buffer.height = height;
+        self.render_buffer.memory.clear();
+        for _ in 0..size { self.render_buffer.memory.push(0); }
     }
 
     pub fn update_and_render(&mut self) {

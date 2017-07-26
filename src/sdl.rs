@@ -23,6 +23,7 @@ impl Sdl {
         let video = context.video()?;
         let window = video.window("rs_hero", width, height)
                           .position_centered()
+                          .resizable()
                           .opengl()
                           .build()?;
         let canvas = window.into_canvas().present_vsync().build()?;
@@ -43,7 +44,7 @@ impl Sdl {
         Ok(sdl)
     }
 
-    pub fn draw_buffer <'a> (
+    pub fn draw_buffer (
         &mut self,
         buffer: &[u8],
         // texture: &mut sdl2::render::Texture<'a>,
@@ -52,12 +53,12 @@ impl Sdl {
         pitch: usize
     ) -> Result<(), Error> {
         self.canvas.clear();
-        // TODO(CJS): maybe not create this texture every time?
+        // TODO(CJS): Figure out how not to re-create this texture every time
         let mut texture = self.texture_creator.create_texture_target(
             // self.texture_creator.default_pixel_format(),
             // NOTE: This format is because I'm lazy and want to write out RGBA
             //       in that order on Little Endian machines...
-            // FIX: if wanting to play on ARM... or BE machines
+            // FIX: if wanting to play on ARM... or other BE processors
             sdl2::pixels::PixelFormatEnum::ABGR8888,
             width, height)?;
         texture.update(None, buffer, pitch)?;
@@ -81,7 +82,7 @@ impl Sdl {
         };
     }
 
-    pub fn handle_events(&mut self) -> bool {
+    pub fn handle_events(&mut self, game: &mut ::game::Game) -> bool {
         let mut should_quit = false;
         let new_event = self.event_pump.poll_event();
         if new_event != self.last_event {
@@ -113,6 +114,7 @@ impl Sdl {
                             WindowEvent::Enter => (),
                             WindowEvent::Leave => (),
                             WindowEvent::SizeChanged(new_x, new_y) => {
+                                game.resize_buffer(new_x as u32, new_y as u32);
                                 println!("Window size changed to: ({},{})",
                                          new_x, new_y);
                             },
