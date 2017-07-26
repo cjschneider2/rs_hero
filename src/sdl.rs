@@ -2,7 +2,7 @@ use sdl2;
 use sdl2::event::Event;
 use sdl2::event::WindowEvent;
 use sdl2::keyboard::Keycode;
-use sdl2::pixels::Color;
+// use sdl2::pixels::Color;
 
 use error::Error;
 
@@ -30,7 +30,7 @@ impl Sdl {
         let event_pump = context.event_pump()?;
         let audio = context.audio()?;
         let texture_creator = canvas.texture_creator();
-        let mut sdl = Sdl {
+        let sdl = Sdl {
             context: context,
             video: video,
             controller: controller,
@@ -54,7 +54,11 @@ impl Sdl {
         self.canvas.clear();
         // TODO(CJS): maybe not create this texture every time?
         let mut texture = self.texture_creator.create_texture_target(
-            self.texture_creator.default_pixel_format(),
+            // self.texture_creator.default_pixel_format(),
+            // NOTE: This format is because I'm lazy and want to write out RGBA
+            //       in that order on Little Endian machines...
+            // FIX: if wanting to play on ARM... or BE machines
+            sdl2::pixels::PixelFormatEnum::ABGR8888,
             width, height)?;
         texture.update(None, buffer, pitch)?;
         self.canvas.copy(&texture, None, None)?;
