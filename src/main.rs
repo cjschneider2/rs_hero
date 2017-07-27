@@ -47,7 +47,6 @@ fn main() {
         game.update_and_render();
 
         // sound output test
-        // TODO: sound stuff
 
         // render our window
         let res = sdl.draw_buffer(&game.render_buffer.memory,

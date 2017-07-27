@@ -15,6 +15,7 @@ pub struct Sdl {
     pub audio: sdl2::AudioSubsystem,
     pub texture_creator: sdl2::render::TextureCreator<sdl2::video::WindowContext>,
     pub last_event: Option<sdl2::event::Event>,
+    pub audio_spec: sdl2::audio::AudioSpecDesired,
 }
 
 impl Sdl {
@@ -31,6 +32,11 @@ impl Sdl {
         let event_pump = context.event_pump()?;
         let audio = context.audio()?;
         let texture_creator = canvas.texture_creator();
+        let audio_spec = sdl2::audio::AudioSpecDesired {
+            freq: Some(44100),
+            channels: Some(2),
+            samples: Some(4),
+        };
         let sdl = Sdl {
             context: context,
             video: video,
@@ -40,6 +46,7 @@ impl Sdl {
             audio: audio,
             texture_creator: texture_creator,
             last_event: None,
+            audio_spec: audio_spec,
         };
         Ok(sdl)
     }
@@ -70,18 +77,6 @@ impl Sdl {
     pub fn open_game_controllers(&mut self) {
     }
 
-    pub fn audio_init(
-        &mut self,
-        _samples_per_second: usize,
-        _buffer_size: usize
-    ) {
-        let _audio_spec = sdl2::audio::AudioSpecDesired {
-            freq: Some(44100),
-            channels: Some(2),
-            samples: None
-        };
-    }
-
     pub fn handle_events(&mut self, game: &mut ::game::Game) -> bool {
         let mut should_quit = false;
         let new_event = self.event_pump.poll_event();
@@ -93,20 +88,18 @@ impl Sdl {
                     => {
                         should_quit = true;
                     },
-                    &Event::KeyDown { keycode: Some(key), .. } => {
-                        match key {
-                            Keycode::A => (),
-                            Keycode::S => (),
-                            Keycode::D => (),
-                            Keycode::F => (),
-                            Keycode::Q => (),
-                            Keycode::E => (),
-                            Keycode::Up => (),
-                            Keycode::Down => (),
-                            Keycode::Right => (),
-                            Keycode::Left => (),
-                            Keycode::Space => (),
-                            _ => (),
+                    &Event::KeyDown { keycode: Some(key), repeat, .. }
+                    => {
+                        let is_down = true;
+                        if !repeat {
+                            process_keycode(key, is_down, game.get_mut_keyboard());
+                        }
+                    },
+                    &Event::KeyUp { keycode: Some(key), repeat, .. }
+                    => {
+                        let is_down = false;
+                        if !repeat {
+                            process_keycode(key, is_down, game.get_mut_keyboard());
                         }
                     },
                     &Event::Window { win_event: w_event, ..} => {
@@ -120,11 +113,8 @@ impl Sdl {
                             _ => (),
                         }
                     },
-                    _ => {
-                        // println!("recieved: {:?}", event);
-                    }
+                    _ => (),
                 }
-
                 if should_quit { return true; };
             }
         }
@@ -133,7 +123,28 @@ impl Sdl {
         }
         should_quit
     }
+}
 
+fn process_keycode(
+    key: sdl2::keyboard::Keycode,
+    is_down: bool,
+    input: &mut ::game::input::ControllerInput
+) {
+    match key {
+        Keycode::W => input.move_up.key_press(is_down),
+        Keycode::A => input.move_left.key_press(is_down),
+        Keycode::S => input.move_down.key_press(is_down),
+        Keycode::D => input.move_right.key_press(is_down),
+        Keycode::Q => input.left_shoulder.key_press(is_down),
+        Keycode::E => input.right_shoulder.key_press(is_down),
+        Keycode::Up => input.action_up.key_press(is_down),
+        Keycode::Down => input.action_down.key_press(is_down),
+        Keycode::Right => input.action_right.key_press(is_down),
+        Keycode::Left => input.action_left.key_press(is_down),
+        Keycode::F => (),
+        Keycode::Space => (),
+        _ => (),
+    }
 }
 
 //  EXTRA STRUCTS -------------------------------------------------------------
@@ -195,5 +206,22 @@ pub fn audio_callback(
             ::std::ptr::copy_nonoverlapping (src_ptr, dst_ptr, len);
         }
     }
-
 }
+
+fn gen_wave(bytes_to_write: usize) -> Vec<i16> {
+    let tone_volume = 100i16;
+    let period = 48000 / 256;
+    let sample_count = bytes_to_write;
+    let mut samples = Vec::new();
+    for t in 0..sample_count {
+        samples.push(
+            if ( t / period ) % 2 == 0 {
+                tone_volume
+            } else {
+                -tone_volume
+            }
+        );
+    }
+    samples
+}
+

@@ -5,4 +5,7 @@ authors = ["C. Jeremiah Schneider <cjschneider2@gmail.com>"]
 
 [dependencies]
 byteorder = "*"
-sdl2 = "*"
+
+[dependencies.sdl2]
+version = "0.30"
+features = ["mixer"]
