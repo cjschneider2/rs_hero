@@ -11,13 +11,14 @@ use error::Error;
 pub struct Sdl {
     pub context: sdl2::Sdl,
     pub video: sdl2::VideoSubsystem,
+    pub window: sdl2::video::Window,
     pub controller: sdl2::GameControllerSubsystem,
-    pub canvas: sdl2::render::Canvas<sdl2::video::Window>,
     pub audio: sdl2::AudioSubsystem,
-    pub texture_creator: sdl2::render::TextureCreator<sdl2::video::WindowContext>,
     pub audio_spec: sdl2::audio::AudioSpecDesired,
     pub event_pump: RefCell<sdl2::EventPump>,
     pub last_event: RefCell<Option<sdl2::event::Event>>,
+    // pub canvas: sdl2::render::Canvas<sdl2::video::Window>,
+    // pub texture_creator: sdl2::render::TextureCreator<sdl2::video::WindowContext>,
 }
 
 impl Sdl {
@@ -29,11 +30,11 @@ impl Sdl {
                           .resizable()
                           .opengl()
                           .build()?;
-        let canvas = window.into_canvas().present_vsync().build()?;
         let controller = context.game_controller()?;
         let event_pump = RefCell::new(context.event_pump()?);
         let audio = context.audio()?;
-        let texture_creator = canvas.texture_creator();
+        // let texture_creator = canvas.texture_creator();
+        // let canvas = window.into_canvas().present_vsync().build()?;
         let audio_spec = sdl2::audio::AudioSpecDesired {
             freq: Some(44100),
             channels: Some(2),
@@ -42,13 +43,14 @@ impl Sdl {
         let sdl = Sdl {
             context: context,
             video: video,
+            window: window,
             controller: controller,
-            canvas: canvas,
             event_pump: event_pump,
             audio: audio,
-            texture_creator: texture_creator,
             last_event: RefCell::new(None),
             audio_spec: audio_spec,
+            //canvas: canvas,
+            //texture_creator: texture_creator,
         };
         Ok(sdl)
     }
@@ -107,9 +109,27 @@ impl Sdl {
         }
         (should_quit, resize)
     }
+
+    pub fn draw_buffer_surface<'a> (
+        &mut self,
+        buffer: &[u8],
+    ) -> Result<(), Error> {
+        let event_pump = &self.event_pump.borrow();
+        let mut surface = self.window.surface(event_pump)?;
+        surface.with_lock_mut(|buf:&mut [u8]| {
+            // println!("buf.len()   : {:?}", buf.len());
+            // println!("buffer.len(): {:?}", buffer.len());
+            if buf.len() == buffer.len() {
+                buf.copy_from_slice(buffer);
+            }
+        });
+        surface.update_window()?;
+        Ok(())
+    }
+
 }
 
-pub fn draw_buffer<'a> (
+pub fn draw_buffer_texture<'a> (
     canvas: &mut sdl2::render::Canvas<sdl2::video::Window>,
     buffer: &[u8],
     texture: &mut sdl2::render::Texture<'a>,
@@ -118,14 +138,15 @@ pub fn draw_buffer<'a> (
     _pitch: usize
 ) -> Result<(), Error> {
     canvas.clear();
-    // canvas.with_texture_canvas
-    // texture.with_lock(None, |buf: &mut [u8], _pitch: usize| {
-    //     buf.copy_from_slice(buffer);
-    // })?;
+    texture.with_lock(None, |buf: &mut [u8], _pitch: usize| {
+        buf.copy_from_slice(buffer);
+    })?;
     canvas.copy(&texture, None, None)?;
     canvas.present();
     Ok(())
 }
+
+
 
 fn process_keycode(
     key: sdl2::keyboard::Keycode,
