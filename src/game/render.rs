@@ -1,6 +1,3 @@
-use std::io::Cursor;
-
-use byteorder::WriteBytesExt;
 
 use ::error::Error;
 use super::buffer;
@@ -10,17 +7,23 @@ pub fn weird_gradient (
     x_offset: u32,
     y_offset: u32
 ) -> Result<(), Error> {
-    let mut cursor = Cursor::new(&mut *buffer.memory);
+    let p_size = (buffer.height * buffer.width * buffer.bytes_per_pixel) as usize;
+    let m_size = buffer.memory.len();
+    assert!( p_size <= m_size);
     for p_y in 0..buffer.height {
+        let row = 4 * p_y * buffer.width;
         for p_x in 0..buffer.width {
             let red   = 0x00;
             let blue  = ((p_x + x_offset) % 0xFF) as u8;
             let green = ((p_y + y_offset) % 0xFF) as u8;
             let alpha = 0xFF;
-            cursor.write_u8(red)?;
-            cursor.write_u8(green)?;
-            cursor.write_u8(blue)?;
-            cursor.write_u8(alpha)?;
+            let loc = (row + (4 * p_x)) as usize;
+            unsafe {
+                *buffer.memory.get_unchecked_mut(loc + 0) = red;
+                *buffer.memory.get_unchecked_mut(loc + 1) = green;
+                *buffer.memory.get_unchecked_mut(loc + 2) = blue;
+                *buffer.memory.get_unchecked_mut(loc + 3) = alpha;
+            }
         }
     }
     Ok(())

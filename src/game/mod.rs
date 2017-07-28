@@ -27,9 +27,7 @@ impl Game {
         let bpp = 4; // 4 bytes per pixel
         let size = width * height * bpp;
         let mut memory = Vec::with_capacity(size as usize);
-        // TODO(CJS): This is just to set the size of the vec because it starts
-        //            out with a size of 0... maybe find a better way?
-        for _ in 0..size { memory.push(0); }
+        unsafe { memory.set_len(size as usize); }
         Game {
             state: State {
                 tone_hz: 440,
@@ -53,12 +51,13 @@ impl Game {
 
     pub fn resize_buffer(&mut self, width: u32, height: u32) {
         let bpp = self.render_buffer.bytes_per_pixel;
-        let size = width * height * bpp;
+        let size = (width * height * bpp) as usize;
         self.render_buffer.pitch = width * bpp;
         self.render_buffer.width = width;
         self.render_buffer.height = height;
         self.render_buffer.memory.clear();
-        for _ in 0..size { self.render_buffer.memory.push(0); }
+        self.render_buffer.memory.reserve(size);
+        unsafe { self.render_buffer.memory.set_len(size); }
     }
 
     pub fn update_and_render(&mut self) {

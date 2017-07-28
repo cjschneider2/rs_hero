@@ -25,6 +25,11 @@ fn main() {
     let mut fps_timer = FpsTimer::new(60.0);
     // let mut last_sec = 0;
 
+    let mut texture = ::std::cell::RefCell::new(
+        sdl.texture_creator.create_texture_streaming(
+        sdl2::pixels::PixelFormatEnum::ABGR8888,
+        width, height).unwrap());
+
     'main: loop {
         // loop start time
         // NOTE: This is just to show the FPS once per second in the log
@@ -36,8 +41,14 @@ fn main() {
         // }
 
         // handle events
-        if sdl.handle_events(&mut game) {
-            break 'main;
+        let (exit, dim) = sdl.handle_events(&mut game);
+        if exit { break 'main; }
+        if let Some((x, y)) = dim {
+            texture = ::std::cell::RefCell::new(
+                sdl.texture_creator.create_texture_streaming(
+                    sdl2::pixels::PixelFormatEnum::ABGR8888,
+                    x as u32, y as u32).unwrap());
+            game.resize_buffer(x as u32, y as u32);
         }
 
         // poll controllers for input??? TODO: Isn't this in handle_inputs?
@@ -49,7 +60,9 @@ fn main() {
         // sound output test
 
         // render our window
-        let res = sdl.draw_buffer(&game.render_buffer.memory,
+        let res = sdl::draw_buffer(&mut sdl.canvas,
+                                  &game.render_buffer.memory,
+                                  &mut texture.borrow_mut(),
                                   game.render_buffer.width,
                                   game.render_buffer.height,
                                   game.render_buffer.pitch as usize);

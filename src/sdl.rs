@@ -1,3 +1,5 @@
+use std::cell::RefCell;
+
 use sdl2;
 use sdl2::event::Event;
 use sdl2::event::WindowEvent;
@@ -11,11 +13,11 @@ pub struct Sdl {
     pub video: sdl2::VideoSubsystem,
     pub controller: sdl2::GameControllerSubsystem,
     pub canvas: sdl2::render::Canvas<sdl2::video::Window>,
-    pub event_pump: sdl2::EventPump,
     pub audio: sdl2::AudioSubsystem,
     pub texture_creator: sdl2::render::TextureCreator<sdl2::video::WindowContext>,
-    pub last_event: Option<sdl2::event::Event>,
     pub audio_spec: sdl2::audio::AudioSpecDesired,
+    pub event_pump: RefCell<sdl2::EventPump>,
+    pub last_event: RefCell<Option<sdl2::event::Event>>,
 }
 
 impl Sdl {
@@ -29,7 +31,7 @@ impl Sdl {
                           .build()?;
         let canvas = window.into_canvas().present_vsync().build()?;
         let controller = context.game_controller()?;
-        let event_pump = context.event_pump()?;
+        let event_pump = RefCell::new(context.event_pump()?);
         let audio = context.audio()?;
         let texture_creator = canvas.texture_creator();
         let audio_spec = sdl2::audio::AudioSpecDesired {
@@ -45,42 +47,25 @@ impl Sdl {
             event_pump: event_pump,
             audio: audio,
             texture_creator: texture_creator,
-            last_event: None,
+            last_event: RefCell::new(None),
             audio_spec: audio_spec,
         };
         Ok(sdl)
     }
 
-    pub fn draw_buffer (
-        &mut self,
-        buffer: &[u8],
-        // texture: &mut sdl2::render::Texture<'a>,
-        width: u32,
-        height: u32,
-        pitch: usize
-    ) -> Result<(), Error> {
-        self.canvas.clear();
-        // TODO(CJS): Figure out how not to re-create this texture every time
-        let mut texture = self.texture_creator.create_texture_target(
-            // self.texture_creator.default_pixel_format(),
-            // NOTE: This format is because I'm lazy and want to write out RGBA
-            //       in that order on Little Endian machines...
-            // FIX: if wanting to play on ARM... or other BE processors
-            sdl2::pixels::PixelFormatEnum::ABGR8888,
-            width, height)?;
-        texture.update(None, buffer, pitch)?;
-        self.canvas.copy(&texture, None, None)?;
-        self.canvas.present();
-        Ok(())
-    }
-
     pub fn open_game_controllers(&mut self) {
     }
 
-    pub fn handle_events(&mut self, game: &mut ::game::Game) -> bool {
+    pub fn handle_events(
+        &self,
+        game: &mut ::game::Game
+    ) -> (bool, Option<(i32, i32)>) {
         let mut should_quit = false;
-        let new_event = self.event_pump.poll_event();
-        if new_event != self.last_event {
+        let mut event_pump = self.event_pump.borrow_mut();
+        let mut last_event = self.last_event.borrow_mut();
+        let mut resize = None;
+        let new_event = event_pump.poll_event();
+        if new_event != *last_event {
             if let Some(ref event) = new_event {
                 match event {
                     &Event::Quit { .. }
@@ -107,7 +92,7 @@ impl Sdl {
                             WindowEvent::Enter => (),
                             WindowEvent::Leave => (),
                             WindowEvent::SizeChanged(x, y) => {
-                                game.resize_buffer(x as u32, y as u32);
+                                resize = Some ((x, y));
                                 println!("Window size change: ({},{})", x, y);
                             },
                             _ => (),
@@ -115,14 +100,31 @@ impl Sdl {
                     },
                     _ => (),
                 }
-                if should_quit { return true; };
             }
         }
         if new_event.is_some() {
-            self.last_event = new_event;
+            *last_event = new_event;
         }
-        should_quit
+        (should_quit, resize)
     }
+}
+
+pub fn draw_buffer<'a> (
+    canvas: &mut sdl2::render::Canvas<sdl2::video::Window>,
+    buffer: &[u8],
+    texture: &mut sdl2::render::Texture<'a>,
+    _width: u32,
+    _height: u32,
+    _pitch: usize
+) -> Result<(), Error> {
+    canvas.clear();
+    // canvas.with_texture_canvas
+    // texture.with_lock(None, |buf: &mut [u8], _pitch: usize| {
+    //     buf.copy_from_slice(buffer);
+    // })?;
+    canvas.copy(&texture, None, None)?;
+    canvas.present();
+    Ok(())
 }
 
 fn process_keycode(
