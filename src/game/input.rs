@@ -1,19 +1,24 @@
+pub const MAX_CONTROLLERS: usize = 4;
+pub const MAX_MOUSE_BUTTONS: usize = 5;
+
 pub struct Input {
-    pub mouse_buttons: [ButtonState; 5],
+    pub mouse_buttons: [ButtonState; MAX_MOUSE_BUTTONS],
     pub mouse_x: i32,
     pub mouse_y: i32,
     pub mouse_z: i32,
-    pub controllers: [ControllerInput; 5],
+    pub keyboard: Controller,
+    pub controllers: [Controller; MAX_CONTROLLERS],
 }
 
 impl Input {
     pub fn new() -> Input {
         Input {
-            mouse_buttons: [ButtonState::new(); 5],
+            mouse_buttons: [ButtonState::new(); MAX_MOUSE_BUTTONS],
             mouse_x: 0,
             mouse_y: 0,
             mouse_z: 0,
-            controllers: [ControllerInput::new(); 5],
+            keyboard: Controller::new(),
+            controllers: [Controller::new(); 4],
         }
     }
 }
@@ -40,7 +45,7 @@ impl ButtonState {
 }
 
 #[derive(Clone, Copy)]
-pub struct ControllerInput {
+pub struct Controller {
     pub is_connected: bool,
     pub is_analog: bool,
     pub stick_avg_x: f32,
@@ -59,9 +64,9 @@ pub struct ControllerInput {
     pub btn_start: ButtonState,
 }
 
-impl ControllerInput {
-    pub fn new() -> ControllerInput {
-        ControllerInput {
+impl Controller {
+    pub fn new() -> Controller {
+        Controller {
             is_connected: false,
             is_analog: false,
             stick_avg_x: 0.0,

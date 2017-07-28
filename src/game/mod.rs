@@ -62,16 +62,16 @@ impl Game {
 
     pub fn update_and_render(&mut self) {
         // Update
-        if self.input.controllers[0].action_up.pressed {
+        if self.input.keyboard.action_up.pressed {
             self.state.y_offset += 1;
         }
-        if self.input.controllers[0].action_down.pressed {
+        if self.input.keyboard.action_down.pressed {
             self.state.y_offset -= 1;
         }
-        if self.input.controllers[0].action_right.pressed {
+        if self.input.keyboard.action_right.pressed {
             self.state.x_offset -= 1;
         }
-        if self.input.controllers[0].action_left.pressed {
+        if self.input.keyboard.action_left.pressed {
             self.state.x_offset += 1;
         }
 
@@ -100,7 +100,7 @@ impl Game {
         }
     }
 
-    pub fn get_mut_keyboard(&mut self) -> &mut input::ControllerInput {
-        &mut self.input.controllers[0]
+    pub fn get_mut_keyboard(&mut self) -> &mut input::Controller {
+        &mut self.input.keyboard
     }
 }

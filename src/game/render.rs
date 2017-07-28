@@ -19,9 +19,9 @@ pub fn weird_gradient (
             let alpha = 0xFF;
             let loc = (row + (4 * p_x)) as usize;
             unsafe {
-                *buffer.memory.get_unchecked_mut(loc + 0) = red;
+                *buffer.memory.get_unchecked_mut(loc + 0) = blue;
                 *buffer.memory.get_unchecked_mut(loc + 1) = green;
-                *buffer.memory.get_unchecked_mut(loc + 2) = blue;
+                *buffer.memory.get_unchecked_mut(loc + 2) = red;
                 *buffer.memory.get_unchecked_mut(loc + 3) = alpha;
             }
         }
